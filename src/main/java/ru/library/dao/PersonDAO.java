@@ -1,47 +1,64 @@
 package ru.library.dao;
 
+import jakarta.transaction.Transactional;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.library.models.Book;
 import ru.library.models.Person;
 
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class PersonDAO {
 
-    private final JdbcTemplate jdbcTemplate;
 
-    public PersonDAO(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    private final SessionFactory sessionFactory;
+
+    @Autowired
+    public PersonDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
+    private Session getSession() {
+        return Objects.requireNonNull(sessionFactory).getCurrentSession();
+    }
+    @Transactional
     public List<Person> getAllPeople() {
-        return jdbcTemplate.query("SELECT * FROM person", new PersonMapper());
+        List<Person> people = getSession().createQuery("select p from Person p", Person.class).getResultList();
+        return people;
     }
 
-
-    public Person findById(Long idPerson) {
-        return jdbcTemplate.queryForObject("select * from person where idPerson = ?",
-                new Object[]{idPerson} , new PersonMapper());
+    @Transactional
+    public Person findById(Long id) {
+        return getSession().get(Person.class, id);
     }
 
+    @Transactional
     public void save(Person person) {
-        jdbcTemplate.update("insert into person(fullName, yearOfBirth) values( ?, ?)"
-                , person.getFullName(), person.getYearOfBirth());
+        getSession().persist(person);
+    }
+
+    @Transactional
+    public void update(Person person, Integer id) {
+        Person personToBeUpdated = getSession().get(Person.class, id);
+        personToBeUpdated.setFullName(person.getFullName());
+        personToBeUpdated.setYearOfBirth(person.getYearOfBirth());
 
     }
 
-    public void update(Person person, Integer idPerson) {
-        jdbcTemplate.update("update person set fullName = ?, yearOfBirth = ? where idPerson = ?",
-                person.getFullName(), person.getYearOfBirth(),  idPerson);
+    @Transactional
+    public void delete(Integer id) {
+        Person personToBeRemoved = getSession().get(Person.class, id);
+        getSession().remove(personToBeRemoved);
     }
 
-    public void delete(Integer idPerson) {
-        jdbcTemplate.update("delete from person where idPerson = ?", idPerson);
-    }
-
+    @Transactional
     public List<Book> bookByPerson(Long idPerson){
-        return jdbcTemplate.query("select book. * from person join book on person.idPerson = book.p_id where idPerson=?",new Object[]{idPerson},new BookMapper());
+//        return jdbcTemplate.query("select book. * from person join book on person.idPerson = book.p_id where idPerson=?",new Object[]{idPerson},new BookMapper());
+        return getSession().get(Person.class, idPerson).getBooks();
     }
 }

@@ -34,8 +34,8 @@ public class BookingController {
     public String showBookById(@PathVariable("id") Long id, Model model, @ModelAttribute("person") Person person) {
         model.addAttribute("bookById", bookDAO.findById(id));
 
-        if (bookDAO.getBookOwner(id).isPresent()) {
-            model.addAttribute("ownerById", bookDAO.getBookOwner(id).get());
+        if (bookDAO.getBookOwner(id) != null) {
+            model.addAttribute("ownerById", bookDAO.getBookOwner(id));
         } else {
             model.addAttribute("allPerson", personDAO.getAllPeople());
         }
